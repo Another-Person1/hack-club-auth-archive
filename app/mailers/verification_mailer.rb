@@ -55,6 +55,48 @@ class VerificationMailer < ApplicationMailer
     )
   end
 
+  def rejected_try_yoti(verification)
+    @verification = verification
+    @identity = verification.identity
+    @first_name = @identity.first_name
+    @reason_line = build_reason_line(verification)
+    @yoti_url = yoti_verification_url(yoti_token: YotiVerificationsController.generate_bypass_token(@identity))
+    @env_prefix = env_prefix
+    @preview_text = "Your manual verification wasn't successful — please complete automated ID verification instead"
+
+    mail(
+      to: @identity.primary_email,
+      subject: prefixed_subject("Action needed: Complete automated ID verification")
+    )
+  end
+
+  def request_yoti_reverification(identity)
+    @identity = identity
+    @first_name = identity.first_name
+    @yoti_url = yoti_verification_url(yoti_token: YotiVerificationsController.generate_bypass_token(identity))
+    @env_prefix = env_prefix
+    @preview_text = "We need to re-verify your identity"
+
+    mail(
+      to: identity.primary_email,
+      subject: prefixed_subject("Action needed: Re-verify your identity")
+    )
+  end
+
+  def yoti_expired(verification)
+    @verification = verification
+    @identity = verification.identity
+    @first_name = @identity.first_name
+    @yoti_url = yoti_verification_url(yoti_token: YotiVerificationsController.generate_bypass_token(@identity))
+    @env_prefix = env_prefix
+    @preview_text = "Your automated verification session expired — please try again"
+
+    mail(
+      to: @identity.primary_email,
+      subject: prefixed_subject("Your verification session expired")
+    )
+  end
+
   private
 
   def build_reason_line(verification)

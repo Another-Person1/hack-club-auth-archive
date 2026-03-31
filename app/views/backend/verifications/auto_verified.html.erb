@@ -1,0 +1,29 @@
+<div class="grid">
+  <%= render Components::Backend::Card.new(title: "auto-verified (#{@auto_verified.total_count})") do %>
+    <%= render Components::Backend::Item.new(icon: "⭠", href: backend_verifications_path) do %>
+      <b>all verifications</b>
+    <% end %>
+    <hr>
+    <p class="meta">These identities were automatically verified and approved via Yoti. Spot-check as needed.</p>
+    <% if @auto_verified.any? %>
+      <div data-navigable-list>
+        <% @auto_verified.each do |verification| %>
+          <div data-navigable-item>
+            <%= render Components::Backend::Item.new(icon: "⭢", href: backend_verification_path(verification)) do %>
+              <b><%= verification.identity.first_name %> <%= verification.identity.last_name %></b>
+              &nbsp;&middot;&nbsp;
+              age <%= verification.yoti_verified_age %>
+              &nbsp;&middot;&nbsp;
+              <small><%= time_ago_in_words(verification.approved_at) %> ago</small>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <%= paginate @auto_verified %>
+    <% else %>
+      <div class="empty-state">
+        no auto-verified identities yet
+      </div>
+    <% end %>
+  <% end %>
+</div>

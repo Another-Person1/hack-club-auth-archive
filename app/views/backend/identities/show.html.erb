@@ -62,6 +62,11 @@
     <div class="section">
       <div class="section-header">
         <h3>verifications</h3>
+        <% mdv_tool do %>
+          <%= button_to request_yoti_verification_backend_identity_path(@identity), method: :post, data: { confirm: "Send Yoti re-verification email to #{@identity.primary_email}?" } do %>
+            <%= render Components::Backend::ActionButton.new { "REQUEST YOTI RE-VERIFY" } %>
+          <% end %>
+        <% end %>
         <% super_admin_tool do %>
           <%= link_to new_vouch_backend_identity_path(@identity) do %>
             <%= render Components::Backend::ActionButton.new { "+ VOUCH" } %>
@@ -86,6 +91,11 @@
                   <tr>
                     <td>
                       <% case verification %>
+                      <% when Verification::YotiVerification %>
+                        Yoti (Automated)
+                        <% if verification.auto_approved? %>
+                          <span class="badge info">auto</span>
+                        <% end %>
                       <% when Verification::AadhaarVerification %>
                         Aadhaar
                       <% when Verification::DocumentVerification %>

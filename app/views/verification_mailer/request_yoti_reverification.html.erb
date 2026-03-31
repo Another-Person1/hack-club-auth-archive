@@ -1,0 +1,11 @@
+<p class="greeting">Hey <%= @first_name %>,</p>
+
+<p class="body-text">We need to re-verify your identity. Please complete our automated ID verification process — it's quick and usually takes just a few minutes.</p>
+
+<div class="button-container">
+  <%= link_to "Verify Your Identity", @yoti_url, class: "button" %>
+</div>
+
+<p class="secondary-text">If you have any questions, reach out to us at identity@hackclub.com.</p>
+
+<p class="signature">— Hack Club</p>

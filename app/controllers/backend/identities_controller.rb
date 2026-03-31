@@ -178,6 +178,19 @@ module Backend
       redirect_to backend_identity_path(@identity)
     end
 
+    def request_yoti_verification
+      authorize @identity, :update?
+
+      VerificationMailer.request_yoti_reverification(@identity).deliver_later
+      @identity.create_activity(
+        :request_yoti_verification,
+        owner: current_user
+      )
+
+      flash[:success] = "Yoti re-verification email sent to #{@identity.primary_email}"
+      redirect_to backend_identity_path(@identity)
+    end
+
     private
 
     def set_identity

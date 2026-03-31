@@ -69,6 +69,7 @@ class Identity < ApplicationRecord
   has_many :document_verifications, class_name: "Verification::DocumentVerification", dependent: :destroy
   has_many :aadhaar_verifications, class_name: "Verification::AadhaarVerification", dependent: :destroy
   has_many :vouch_verifications, class_name: "Verification::VouchVerification", dependent: :destroy
+  has_many :yoti_verifications, class_name: "Verification::YotiVerification", dependent: :destroy
   has_many :addresses, class_name: "Address", dependent: :destroy
   belongs_to :primary_address, class_name: "Address", optional: true
 
@@ -200,7 +201,9 @@ class Identity < ApplicationRecord
     return :basic_info unless persisted?
 
     unless verifications.where(status: %w[approved pending]).any?
-      if country == "IN" && Flipper.enabled?(:authbridge_aadhaar_2025_07_10, self)
+      if yoti_verification_enabled?
+        return :yoti
+      elsif country == "IN" && Flipper.enabled?(:authbridge_aadhaar_2025_07_10, self)
         return :aadhaar
       else
         return :document
@@ -214,9 +217,15 @@ class Identity < ApplicationRecord
 
   def onboarding_complete? = onboarding_step == :submitted
 
-  def needs_documents? = country != "IN" && onboarding_step == :document
+  def needs_documents? = !yoti_verification_enabled? && country != "IN" && onboarding_step == :document
 
-  def needs_aadhaar? = country == "IN" && Flipper.enabled?(:authbridge_aadhaar_2025_07_10, self) && onboarding_step == :aadhaar
+  def needs_aadhaar? = !yoti_verification_enabled? && country == "IN" && Flipper.enabled?(:authbridge_aadhaar_2025_07_10, self) && onboarding_step == :aadhaar
+
+  def needs_yoti? = yoti_verification_enabled? && onboarding_step == :yoti
+
+  def yoti_verification_enabled?
+    Flipper.enabled?(:yoti_verification, self)
+  end
 
   def latest_verification = verifications.not_ignored.order(created_at: :desc).first
 
@@ -276,7 +285,9 @@ class Identity < ApplicationRecord
   def onboarding_redirect_path
     return Rails.application.routes.url_helpers.basic_info_onboarding_path unless persisted?
 
-    if country == "IN" && Flipper.enabled?(:authbridge_aadhaar_2025_07_10, self)
+    if yoti_verification_enabled?
+      return Rails.application.routes.url_helpers.yoti_verification_path if needs_yoti_upload?
+    elsif country == "IN" && Flipper.enabled?(:authbridge_aadhaar_2025_07_10, self)
       return Rails.application.routes.url_helpers.aadhaar_onboarding_path if needs_aadhaar_upload?
       return Rails.application.routes.url_helpers.aadhaar_step_2_onboarding_path unless aadhaar_verifications.pending.any?
     else
@@ -289,7 +300,16 @@ class Identity < ApplicationRecord
   end
 
   def needs_document_upload?
+    return false if yoti_verification_enabled?
     return false if country == "IN" && Flipper.enabled?(:authbridge_aadhaar_2025_07_10, self)
+    return false if verification_status == "ineligible"
+    return true unless verifications.not_ignored.where(status: %w[approved pending]).any?
+    return false if verification_status == "verified"
+    needs_resubmission?
+  end
+
+  def needs_yoti_upload?
+    return false unless yoti_verification_enabled?
     return false if verification_status == "ineligible"
     return true unless verifications.not_ignored.where(status: %w[approved pending]).any?
     return false if verification_status == "verified"

@@ -4,6 +4,10 @@
       <b>pending verifications</b>
       <p class="shortcode">&nbsp; [ PEND ]</p>
     <% end %>
+    <%= render Components::Backend::Item.new(icon: "⭢", href: auto_verified_backend_verifications_path) do %>
+      <b>auto-verified (yoti)</b>
+      <p class="shortcode">&nbsp; [ AUTO ]</p>
+    <% end %>
     <hr>
     <% if @recent_verifications.any? %>
       <div class="table-container">

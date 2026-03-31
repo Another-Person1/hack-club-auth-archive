@@ -210,11 +210,13 @@ Rails.application.routes.draw do
     resources :verifications, only: [ :index, :show ] do
       collection do
         get :pending
+        get :auto_verified
       end
       member do
         patch :approve
         patch :reject
         patch :ignore
+        post :request_yoti_reverification
       end
     end
 
@@ -225,6 +227,7 @@ Rails.application.routes.draw do
         get :new_vouch
         post :create_vouch
         post :promote_to_full_user
+        post :request_yoti_verification
       end
     end
 
@@ -303,7 +306,14 @@ Rails.application.routes.draw do
   delete "/logout", to: "sessions#logout", as: :logout
 
   get "/verifications/new", to: "verifications#new", as: :new_verifications
+  get "/verifications/choose_method", to: "verifications#choose_method", as: :choose_verification_method
   get "/verifications/status", to: "verifications#status", as: :verification_status
+
+  # Yoti automated verification (must be before the :id wildcard routes)
+  get "/verifications/yoti", to: "yoti_verifications#new", as: :yoti_verification
+  post "/verifications/yoti/callback", to: "yoti_verifications#callback", as: :yoti_verification_callback
+  get "/verifications/yoti/status", to: "yoti_verifications#status", as: :yoti_verification_status
+
   get "/verifications/:id", to: "verifications#show", as: :verification_step
   put "/verifications/:id", to: "verifications#update", as: :update_verification_step
 
@@ -405,6 +415,11 @@ Rails.application.routes.draw do
   # Slack interactivity routes
   namespace :slack do
     post "/interactivity", to: "interactivity#create"
+  end
+
+  # Webhooks
+  namespace :webhooks do
+    post "yoti", to: "yoti#create"
   end
 
   scope :saml do

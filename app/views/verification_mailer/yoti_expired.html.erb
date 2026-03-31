@@ -1,0 +1,11 @@
+<p class="greeting">Hey <%= @first_name %>,</p>
+
+<p class="body-text">Your automated ID verification session expired before it could be completed. No worries — you can start a new one. It only takes a few minutes.</p>
+
+<div class="button-container">
+  <%= link_to "Restart Verification", @yoti_url, class: "button" %>
+</div>
+
+<p class="secondary-text">If you have any questions, reach out to us at identity@hackclub.com.</p>
+
+<p class="signature">— Hack Club</p>

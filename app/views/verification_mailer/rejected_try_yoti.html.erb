@@ -1,0 +1,15 @@
+<p class="greeting">Hey <%= @first_name %>,</p>
+
+<p class="body-text">We weren't able to verify your identity from the documents you uploaded. The reason was:</p>
+
+<div class="reason-block"><%= @reason_line %></div>
+
+<p class="body-text">Don't worry — you can quickly re-verify using our automated ID verification instead. It only takes a few minutes.</p>
+
+<div class="button-container">
+  <%= link_to "Start Automated Verification", @yoti_url, class: "button" %>
+</div>
+
+<p class="secondary-text">If you have any questions, reach out to us at identity@hackclub.com.</p>
+
+<p class="signature">— Hack Club</p>

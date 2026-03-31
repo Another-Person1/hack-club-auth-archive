@@ -14,7 +14,29 @@ class VerificationsController < ApplicationController
       return
     end
 
+    # If Yoti is enabled, route to method choice (or directly to Yoti for forced-Yoti countries)
+    if current_identity.yoti_verification_enabled?
+      redirect_to choose_verification_method_path
+      return
+    end
+
     redirect_to verification_step_path(:document)
+  end
+
+  def choose_method
+    status = current_identity.verification_status
+    if verification_should_redirect?(status)
+      redirect_to verification_status_path
+      return
+    end
+
+    unless current_identity.yoti_verification_enabled?
+      redirect_to verification_step_path(:document)
+      return
+    end
+
+    @identity = current_identity
+    @show_transcript_option = Identity::Document.selectable_types_for_country(current_identity.country).include?(:transcript)
   end
 
   def status

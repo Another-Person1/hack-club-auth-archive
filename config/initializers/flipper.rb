@@ -43,3 +43,14 @@ end
 # Flipper.register(:admins) do |actor|
 #  actor.respond_to?(:admin?) && actor.admin?
 # end
+
+# Country-based groups for per-country feature rollout.
+# Usage:
+#   Flipper.enable_group(:yoti_verification, :country_IN)   # enable for India
+#   Flipper.enable_group(:yoti_verification, :country_US)   # enable for US
+#   Flipper.enable(:yoti_verification)                      # enable globally
+%w[IN US CA GB AU SG].each do |code|
+  Flipper.register(:"country_#{code}") do |actor|
+    actor.respond_to?(:country) && actor.country == code
+  end
+end

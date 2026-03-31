@@ -1,6 +1,6 @@
 module Backend
   class VerificationsController < ApplicationController
-    before_action :set_verification, only: [ :show, :approve, :reject, :ignore ]
+    before_action :set_verification, only: [ :show, :approve, :reject, :ignore, :request_yoti_reverification ]
 
     hint :list_navigation, on: [ :index, :pending ]
     hint :pagination, on: [ :index, :pending ]
@@ -47,7 +47,7 @@ module Backend
 
       # Fetch break glass activities efficiently with a single query
       break_glass_activities = []
-      unless @verification.is_a?(Verification::VouchVerification)
+      unless @verification.is_a?(Verification::VouchVerification) || @verification.is_a?(Verification::YotiVerification)
         @relevant_object = @verification.identity_document || @verification.aadhaar_record
         break_glass_record_ids = @relevant_object&.break_glass_records&.pluck(:id) || []
         break_glass_activities = PublicActivity::Activity
@@ -104,9 +104,14 @@ module Backend
       @verification.internal_rejection_comment = internal_comment if internal_comment.present?
       @verification.save!
 
-      @verification.create_activity(key: "verification.reject", owner: current_user, recipient: @verification.identity, parameters: { reason: reason, details: details, internal_comment: internal_comment })
+      # If admin checked "also email user to re-verify via Yoti", send that email (bypasses Flipper)
+      if params[:request_yoti_reverification] == "true"
+        VerificationMailer.rejected_try_yoti(@verification).deliver_later
+      end
 
-      flash[:success] = "Document rejected with feedback"
+      @verification.create_activity(key: "verification.reject", owner: current_user, recipient: @verification.identity, parameters: { reason: reason, details: details, internal_comment: internal_comment, request_yoti_reverification: params[:request_yoti_reverification] == "true" })
+
+      flash[:success] = params[:request_yoti_reverification] == "true" ? "Rejected & Yoti re-verification email sent" : "Document rejected with feedback"
       redirect_to pending_backend_verifications_path
     end
 
@@ -131,6 +136,30 @@ module Backend
 
       flash[:notice] = "Verification ignored successfully"
       redirect_to backend_identity_path(@verification.identity)
+    end
+
+    def auto_verified
+      authorize Verification
+
+      set_keyboard_shortcut(:back, backend_root_path)
+
+      @auto_verified = Verification::YotiVerification
+        .approved
+        .where(auto_approved: true)
+        .includes(:identity)
+        .order(approved_at: :desc)
+        .page(params[:page])
+        .per(20)
+    end
+
+    def request_yoti_reverification
+      authorize @verification, :reject?
+
+      VerificationMailer.rejected_try_yoti(@verification).deliver_later
+      @verification.create_activity(key: "verification.request_yoti_reverification", owner: current_user, recipient: @verification.identity)
+
+      flash[:success] = "Yoti re-verification email sent to #{@verification.identity.primary_email}"
+      redirect_to backend_verification_path(@verification)
     end
 
     rescue_from AASM::InvalidTransition, with: :oops

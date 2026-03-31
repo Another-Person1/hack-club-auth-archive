@@ -159,3 +159,5 @@ end
 gem "premailer-rails", "~> 1.12"
 
 gem "openssl", "~> 3.3"
+
+gem "yoti", "~> 1.8"

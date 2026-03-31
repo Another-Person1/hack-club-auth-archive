@@ -8,8 +8,17 @@
     <section class="section-card">
       <div class="status-indicator">
         <span class="status-badge pending"><%= t(".badges.under_review") %></span>
-        <h3><%= t(".pending.title") %></h3>
-        <p><%= t(".pending.subtitle") %></p>
+        <% if @latest_verification.is_a?(Verification::YotiVerification) %>
+          <h3>Automated Verification in Progress</h3>
+          <% if @latest_verification.yoti_status == "COMPLETED_NEEDS_REVIEW" %>
+            <p>Your request has been submitted for additional review.</p>
+          <% else %>
+            <p>Your ID is being automatically verified &mdash; this usually takes just a few minutes.</p>
+          <% end %>
+        <% else %>
+          <h3><%= t(".pending.title") %></h3>
+          <p><%= t(".pending.subtitle") %></p>
+        <% end %>
       </div>
 
       <div class="status-content">

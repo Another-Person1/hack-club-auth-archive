@@ -15,6 +15,37 @@
         <div class="section-header"><h3>document</h3></div>
         <div class="section-content">
           <% case @verification %>
+          <% when Verification::YotiVerification %>
+            <div class="detail-row">
+              <span class="detail-label">type</span>
+              <span class="detail-value">Yoti (Automated)</span>
+            </div>
+            <% if @verification.auto_approved? %>
+              <div class="detail-row">
+                <span class="detail-label">approval</span>
+                <span class="detail-value"><span class="badge info">auto-approved</span></span>
+              </div>
+            <% end %>
+            <div class="detail-row">
+              <span class="detail-label">session</span>
+              <span class="detail-value"><%= @verification.yoti_session_id || "—" %></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">yoti status</span>
+              <span class="detail-value"><%= @verification.yoti_status || "—" %></span>
+            </div>
+            <% if @verification.yoti_verified_age.present? %>
+              <div class="detail-row">
+                <span class="detail-label">verified age</span>
+                <span class="detail-value"><%= @verification.yoti_verified_age %></span>
+              </div>
+            <% end %>
+            <% if @verification.yoti_completed_at.present? %>
+              <div class="detail-row">
+                <span class="detail-label">completed</span>
+                <span class="detail-value"><%= @verification.yoti_completed_at.strftime("%B %d, %Y at %I:%M %p") %></span>
+              </div>
+            <% end %>
           <% when Verification::DocumentVerification %>
             <%= render Components::IdentityReview::DocumentInfo.new(@verification) %>
           <% when Verification::AadhaarVerification %>
@@ -45,7 +76,9 @@
     <div class="section">
       <div class="section-header"><h3>files</h3></div>
       <div class="section-content">
-        <% if @verification.is_a?(Verification::VouchVerification) %>
+        <% if @verification.is_a?(Verification::YotiVerification) %>
+          <div class="empty-state">verified via Yoti — no files stored locally</div>
+        <% elsif @verification.is_a?(Verification::VouchVerification) %>
           <p>manually vouched on <%= @verification.created_at.strftime("%B %d, %Y at %I:%M %p") %></p>
           <% if @verification.evidence.attached? %>
             <img src="<%= url_for(@verification.evidence) %>" alt="vouch evidence" style="max-width: 100%;">
@@ -96,7 +129,23 @@
               <% end %>
               <div class="form-row">
                 <%= form.label :rejection_reason, "reason" %>
-                <% if @verification.is_a?(Verification::AadhaarVerification) %>
+                <% if @verification.is_a?(Verification::YotiVerification) %>
+                  <%
+                    default_selection = if @verification.identity.under_13?
+                      "under_13"
+                    elsif @verification.identity.resemblances.any?
+                      "duplicate"
+                    else
+                      nil
+                    end
+                  %>
+                  <%= form.select :rejection_reason,
+                                 grouped_options_for_select([
+                                   ["Retryable", Verification::YotiVerification::RETRYABLE_REJECTION_REASONS.map { |reason| [Verification::YotiVerification::REJECTION_REASON_NAMES[reason], reason] }],
+                                   ["Fatal", Verification::YotiVerification::FATAL_REJECTION_REASONS.map { |reason| [Verification::YotiVerification::REJECTION_REASON_NAMES[reason], reason] }]
+                                 ], default_selection),
+                                 { include_blank: "select..." } %>
+                <% elsif @verification.is_a?(Verification::AadhaarVerification) %>
                   <%
                     default_selection = if @verification.identity.under_13?
                       "under_13"
@@ -138,6 +187,12 @@
                 <%= form.label :internal_rejection_comment, "internal" %>
                 <%= form.text_area :internal_rejection_comment, rows: 2, placeholder: "internal notes (not visible to user)..." %>
               </div>
+              <% unless @verification.is_a?(Verification::YotiVerification) %>
+                <div class="form-row">
+                  <%= form.check_box :request_yoti_reverification, {}, "true", "false" %>
+                  <%= form.label :request_yoti_reverification, "also email user to re-verify via Yoti" %>
+                </div>
+              <% end %>
               <div class="form-actions">
                 <%= form.submit "REJECT", class: "action_button", data: { confirm: "reject this document?" } %>
               </div>

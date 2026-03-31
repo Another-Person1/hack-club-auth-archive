@@ -1,0 +1,28 @@
+<div class="page-header">
+  <h1>Verify Your Identity</h1>
+  <p>Choose how you'd like to verify your identity. Automated verification is the fastest option.</p>
+</div>
+
+<div class="page-sections">
+  <section class="section-card">
+    <h3>Automated ID Verification</h3>
+    <p>Quick &amp; instant &mdash; verify your identity in minutes using your phone camera or webcam. Results are usually immediate.</p>
+    <%= link_to "Start Automated Verification", yoti_verification_path, role: "button" %>
+  </section>
+
+  <section class="section-card">
+    <h3>Manual Document Upload</h3>
+    <p>Upload a photo of your government-issued ID for manual review by our team.</p>
+    <p class="meta">Note: If we're unable to verify your documents manually, you may need to complete an automated ID verification.</p>
+    <%= link_to "Upload Documents", verification_step_path(:document), role: "button", class: "secondary" %>
+  </section>
+
+  <% if @show_transcript_option %>
+    <section class="section-card">
+      <h3>School Transcript &amp; Student ID</h3>
+      <p>Upload your school transcript and student ID for manual review.</p>
+      <p class="meta">Note: If we're unable to verify your documents manually, you may need to complete an automated ID verification.</p>
+      <%= link_to "Upload Transcript", verification_step_path(:document), role: "button", class: "secondary" %>
+    </section>
+  <% end %>
+</div>
